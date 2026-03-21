@@ -1,0 +1,284 @@
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio auto-generated files
+.vs/
+*.vcxproj.filters
+*.vcxproj.user
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache / options directory
+.vs/
+.vscode/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/NuGet.Config
+
+# Benchmark/Performance profiler results
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# JustCode
+.JustCode
+
+# TeamCity
+_TeamCity*
+
+# DotCover
+*.dotCover
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# Installshield output folder
+[Ee]xpress/
+
+# DocProject
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+# Click-Once directory
+publish/
+
+# Publish Web Output
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.publishproj
+
+# Deployment
+*.deploy.cmd
+
+# Microsoft Azure Build Output
+csx/
+*.build.csdef
+
+# Windows Store app package directories and files
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.appxupload
+
+# Visual C++ cache files
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Visual Studio Trace files
+*.e2e
+
+# Code Analysis
+migrate.log
+*.pidb
+*.svclog
+*.scc
+
+# Office Temp Files
+~$*
+
+# =============================================================================
+# C++ SPECIFIC
+# =============================================================================
+
+# Compiled object files
+*.o
+*.obj
+*.elf
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.ilk
+*.map
+*.exp
+
+# vcpkg
+vcpkg_installed/
+vcpkg/
+!vcpkg.json
+!vcpkg-configuration.json
+
+# CMake
+build/
+out/
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+cmake-build-*/
+_deps/
+install/
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Dotnet core
+project.lock.json
+project.fragment.lock.json
+
+# Build results
+*.dll
+!**/wwwroot/**/*.dll
+
+# ASP.NET upload / temp
+App_Data/
+App_LocalResources/
+App_GlobalResources/
+
+# Publish profiles
+Properties/PublishProfiles/
+
+# Runtime data
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+*.deps.json
+
+# .NET user secrets
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+wwwroot/lib/
+wwwroot/dist/
+.parcel-cache/
+
+# Bower
+bower_components/
+
+# Bundler output
+bundleconfig.json.bak
+
+# Azure
+.azure/
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Logs & temp
+*.log
+*.tmp
+*.temp
+*.swp
+*.bak
+*.orig
+scanner/CMakeUserPresets.json
