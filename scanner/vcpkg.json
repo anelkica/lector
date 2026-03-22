@@ -1,8 +1,0 @@
-{
-  "name": "scanner",
-  "dependencies": [
-    "cli11",
-    "opencv4",
-    "tesseract"
-  ]
-}

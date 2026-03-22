@@ -1,3 +1,6 @@
+# tessdata language files
+assets/tessdata/*.traineddata
+
 # User-specific files
 *.rsuser
 *.suo
