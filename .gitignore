@@ -281,4 +281,4 @@ $RECYCLE.BIN/
 *.swp
 *.bak
 *.orig
-scanner/CMakeUserPresets.json
+*.orig
