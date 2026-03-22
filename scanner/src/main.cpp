@@ -19,10 +19,10 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	cv::Mat grayscaled = scanner::processing::grayscale(*load_result);
+	cv::Mat processed = scanner::processing::preprocess(*load_result);
 
 	cv::imshow("Original", *load_result);
-	cv::imshow("Grayscale", grayscaled);
+	cv::imshow("Final", processed);
 	cv::waitKey(0);
 
 	return 0;

@@ -3,5 +3,5 @@
 #include <expected>
 
 namespace scanner::processing {
-	cv::Mat grayscale(const cv::Mat& image);
+	cv::Mat preprocess(const cv::Mat& image);
 }
