@@ -5,10 +5,12 @@
       "name": "x64-debug",
       "displayName": "x64 Debug",
       "generator": "Ninja",
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "toolchainFile": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
       "binaryDir": "${sourceDir}/build/x64-debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "CMAKE_C_COMPILER": "cl.exe"
       }
     }
   ],

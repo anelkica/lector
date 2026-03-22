@@ -1,7 +1,8 @@
 {
-	"name": "scanner",
-	"dependencies": [
-		"opencv4",
-		"tesseract"
-	]
+  "name": "scanner",
+  "dependencies": [
+    "cli11",
+    "opencv4",
+    "tesseract"
+  ]
 }

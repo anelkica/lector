@@ -13,5 +13,19 @@ endif()
 
 find_package(OpenCV REQUIRED)
 find_package(Tesseract CONFIG REQUIRED)
+find_package(CLI11 REQUIRED)
 
-add_executable(scanner src/scanner.cpp src/scanner.h)
+add_executable(scanner 
+	"src/main.cpp"  
+	"src/image/loader.cpp" 
+	"src/processing/processing.cpp"
+)
+target_include_directories(scanner PRIVATE src)
+target_link_libraries(scanner PRIVATE
+	opencv_core
+	opencv_imgproc
+	opencv_imgcodecs
+    opencv_highgui
+	Tesseract::libtesseract
+	CLI11::CLI11
+)
