@@ -209,6 +209,11 @@ Makefile
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
+# SQLite database
+*.db
+*.db-shm
+*.db-wal
+
 # Dotnet core
 project.lock.json
 project.fragment.lock.json

@@ -3,8 +3,28 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Lector.API.Models;
 
+// now usually everything should have it's own file
+// but idc, this is a smol project and it's much cleaner placing everything in one file here
+// especially since the objects are small (dto -> extension -> db entity)
+
 /// <summary>OCR processing status.</summary>
 public enum ScanStatus { Pending, Success, Error, Timeout }
+
+// hide StorageName from frontend btw
+public record ScanDto(
+    Guid Id,
+    string Alias,
+    string? OcrResult,
+    ScanStatus Status,
+    DateTime CreatedAt
+);
+
+public static class ScanExtensions
+{
+    /// <summary>Converts a Scan to ScanDto for API responses.</summary>
+    public static ScanDto ToDto(this Scan scan) =>
+        new(scan.Id, scan.Alias, scan.OcrResult, scan.Status, scan.CreatedAt);
+}
 
 /// <summary>Represents an OCR scan result with metadata for history and deduplication.</summary>
 [Index(nameof(Hash))]
