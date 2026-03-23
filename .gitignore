@@ -10,6 +10,7 @@ assets/tessdata/*.traineddata
 *.userprefs
 
 # Visual Studio auto-generated files
+.local/
 .vs/
 *.vcxproj.filters
 *.vcxproj.user
