@@ -16,9 +16,53 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
     // hardcoded but eh, check Program.cs for folder init
     private readonly string _uploadsFolder = Path.Combine(AppContext.BaseDirectory, "uploads");
 
+    [HttpGet]
+    [EndpointDescription("List recent scans ordered by creation date")]
+    public async Task<ActionResult<IEnumerable<ScanDto>>> GetScans(int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var scans = await db.Scans
+            .OrderByDescending(scan => scan.CreatedAt)
+            .Take(Math.Min(limit, 100))
+            .ToListAsync(cancellationToken);
+
+        return Ok(scans.Select(scan => scan.ToDto()));
+    }
+
+    [HttpGet("{id:guid}")]
+    [EndpointDescription("Get details of a specific scan")]
+    public async Task<ActionResult<ScanDto>> GetScan(Guid id, CancellationToken cancellationToken = default)
+    {
+        var scan = await db.Scans.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        if (scan is null)
+            return NotFound($"Scan {id} not found");
+
+        return Ok(scan.ToDto());
+    }
+
+    [HttpDelete("{id:guid}")]
+    [EndpointDescription("Delete a scan record and its associated file")]
+    public async Task<ActionResult> DeleteScan(Guid id, CancellationToken cancellationToken = default)
+    {
+        var scan = await db.Scans.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        if (scan is null)
+            return NotFound($"Scan {id} not found");
+
+        var filePath = Path.Combine(_uploadsFolder, scan.StorageName);
+        if (System.IO.File.Exists(filePath))
+            System.IO.File.Delete(filePath);
+        else
+            logger.LogWarning("File not found for deletion: {Path}", filePath);
+
+        db.Scans.Remove(scan);
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Deleted scan: {Id} ({Alias})", id, scan.Alias);
+        return NoContent();
+    }
+
     [HttpPost]
     [EndpointDescription("Upload an image for OCR scanning. Returns recognized text from the image.")]
-    public async Task<ActionResult<ScanDto>> ScanImage(IFormFile image, CancellationToken cancellationToken)
+    public async Task<ActionResult<ScanDto>> ScanImage(IFormFile image, CancellationToken cancellationToken = default)
     {
         if (image is not { Length: > 0 })
             return BadRequest("No image uploaded");
@@ -69,7 +113,7 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
             db.Scans.Add(scan);
             await db.SaveChangesAsync(cancellationToken);
 
-            logger.LogInformation("Scan completed: {Path}, {Duration}ms)", filePath, stopwatch.ElapsedMilliseconds);
+            logger.LogInformation("Scan completed: {Path} ({Duration}ms)", filePath, stopwatch.ElapsedMilliseconds);
             return Ok(scan.ToDto());
         }
         catch (TimeoutException ex)
