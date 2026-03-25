@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Playfair+Display:wght@900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:opsz,wght@9..40,400;500;700&family=Playfair+Display:wght@900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -62,7 +62,7 @@
     --shadow-shadow: var(--shadow);
     --font-weight-base: 500;
     --font-weight-heading: 700;
-    --font-sans: "Space Grotesk", sans-serif;
+    --font-sans: "DM Sans", sans-serif;
     --font-heading: "Archivo Black", sans-serif;
     --font-logo: "Playfair Display", serif;
 }

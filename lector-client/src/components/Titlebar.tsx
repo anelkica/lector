@@ -4,32 +4,38 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { NAV_LINKS } from "@/constants";
 
 export function Titlebar() {
   return (
-    <nav className="fixed inset-x-0 top-0 z-20 h-[70px] flex items-center border-b-4 border-border bg-secondary-background px-5">
-      {/* Logo - Always on left */}
+    <nav className="fixed inset-x-0 top-0 z-20 h-17.5 flex items-center border-b-4 border-border bg-secondary-background px-5">
+      {/* logo */}
       <Button variant="default" size="icon" className="shrink-0" asChild>
-        <a href="/" className="text-[22px] font-logo font-black" style={{ WebkitTextStroke: "1px black" }}>
+        <a
+          href="/"
+          className="text-[22px] font-logo font-black"
+          style={{ WebkitTextStroke: "1px black" }}
+        >
           L
         </a>
       </Button>
 
-      {/* Desktop Navigation - Centered Buttons */}
+      {/* desktop nav */}
       <div className="hidden sm:flex items-center justify-center flex-1 gap-2">
-        {["Scans", "Upload", "About"].map((link) => (
-          <Button key={link} variant="neutral" asChild>
-            <a href={`/${link.toLowerCase()}`}>{link}</a>
+        {NAV_LINKS.map((link) => (
+          <Button key={link.label} variant="neutral" asChild>
+            <a href={link.href}>{link.label}</a>
           </Button>
         ))}
       </div>
 
-      {/* Mobile Hamburger Menu */}
+      {/* mobile hamburger menu */}
       <div className="flex sm:hidden ml-auto">
         <Sheet>
           <SheetTrigger asChild>
@@ -39,27 +45,29 @@ export function Titlebar() {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-[250px] rounded-none border-l-4 border-border"
+            className="w-65 rounded-none border-l-4 border-border"
           >
-            <SheetHeader>
-              <SheetTitle>Menu</SheetTitle>
+            <SheetHeader className="px-5 py-4">
+              <SheetTitle className="font-bold">Menu</SheetTitle>
             </SheetHeader>
-            <nav className="flex flex-col gap-2 mt-8 px-4">
-              {["Scans", "Upload", "About"].map((link) => (
+
+            <nav className="flex flex-col gap-1 px-5 py-4">
+              {NAV_LINKS.map((item) => (
                 <a
-                  key={link}
-                  href={`/${link.toLowerCase()}`}
-                  className="w-full px-3 py-2 font-heading text-base rounded-base
-                             border-2 border-transparent hover:border-border
+                  key={item.label}
+                  href={item.href}
+                  className="flex items-center gap-3 px-3 py-3 font-heading text-lg rounded-base
                              hover:bg-main hover:text-main-foreground transition-colors"
                 >
-                  {link}
+                  <item.icon className="h-4 w-4 -translate-y-0.5 shrink-0" />
+                  <span className="leading-none">{item.label}</span>
                 </a>
               ))}
             </nav>
-            <SheetFooter className="mt-auto pt-4 border-t-2 border-border">
+
+            <SheetFooter className="mt-auto px-5 pb-6 pt-4">
               <SheetClose asChild>
-                <Button variant="neutral" className="w-full">
+                <Button variant="neutral" className="w-full py-5 text-lg">
                   Close
                 </Button>
               </SheetClose>

@@ -16,14 +16,15 @@ public record ScanDto(
     string Alias,
     string? OcrResult,
     ScanStatus Status,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    bool IsDuplicate = false
 );
 
 public static class ScanExtensions
 {
     /// <summary>Converts a Scan to ScanDto for API responses.</summary>
-    public static ScanDto ToDto(this Scan scan) =>
-        new(scan.Id, scan.Alias, scan.OcrResult, scan.Status, scan.CreatedAt);
+    public static ScanDto ToDto(this Scan scan, bool isDuplicate = false) =>
+        new(scan.Id, scan.Alias, scan.OcrResult, scan.Status, scan.CreatedAt, isDuplicate);
 }
 
 /// <summary>Represents an OCR scan result with metadata for history and deduplication.</summary>

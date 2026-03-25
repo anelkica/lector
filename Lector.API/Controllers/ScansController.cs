@@ -80,7 +80,7 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
         if (cached is not null)
         {
             logger.LogInformation("Duplicate detected (hash {Hash}), returning cached result", hash);
-            return Ok(cached.ToDto());
+            return Ok(cached.ToDto(isDuplicate: true));
         }
 
         // not cached? prepare to save to disk
@@ -114,7 +114,7 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
             await db.SaveChangesAsync(cancellationToken);
 
             logger.LogInformation("Scan completed: {Path} ({Duration}ms)", filePath, stopwatch.ElapsedMilliseconds);
-            return Ok(scan.ToDto());
+            return Ok(scan.ToDto(isDuplicate: false));
         }
         catch (TimeoutException ex)
         {
