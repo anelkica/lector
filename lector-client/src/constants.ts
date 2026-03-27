@@ -7,12 +7,19 @@ export const FILE_MAX_LABEL = "35MB";
 export const ROUTES = {
   home: "/",
   scans: "/scans",
-  upload: "/upload",
   about: "/about",
 } as const;
 
 export const NAV_LINKS = [
+  { label: "Upload", href: ROUTES.home, icon: Upload },
   { label: "Scans", href: ROUTES.scans, icon: ScanLine },
-  { label: "Upload", href: ROUTES.upload, icon: Upload },
   { label: "About", href: ROUTES.about, icon: Info },
 ] as const;
+
+// scan status codes from backend (ScanStatus enum)
+export const SCAN_STATUS = {
+  0: { label: "Pending", tone: "gray" },
+  1: { label: "Success", tone: "green" },
+  2: { label: "Error", tone: "red" },
+  3: { label: "Timeout", tone: "amber" },
+} as const;

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { ScanDto } from "@/types/scan";
-import { API_SCANS } from "@/constants";
+import { API_SCANS, FILE_MAX_LABEL } from "@/constants";
 import { validateFile } from "@/utils/fileValidation";
 
 type UploadState =
@@ -30,7 +30,6 @@ export default function UploadPage() {
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // extract preview for cleanup (exists in non-empty states)
   const preview =
     state.status === "selected" ||
     state.status === "uploading" ||
@@ -39,14 +38,12 @@ export default function UploadPage() {
       ? state.preview
       : undefined;
 
-  // revoke preview URL on unmount or when preview changes
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
 
-  // helper to revoke a preview URL
   const revokePreview = (p?: string) => {
     if (p) URL.revokeObjectURL(p);
   };
@@ -58,7 +55,6 @@ export default function UploadPage() {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
   };
 
   const handleDragLeave = () => {
@@ -75,11 +71,10 @@ export default function UploadPage() {
     const error = validateFile(file);
     if (error) {
       toast.error(error);
-      if (inputRef.current) inputRef.current.value = "";
+      if (inputRef.current) inputRef.current.value = ""; // clear to re-select
       return;
     }
 
-    inputRef.current?.blur(); // dismiss native picker focus
     revokePreview(preview);
     setState({ status: "selected", file, preview: URL.createObjectURL(file) });
   };
@@ -89,7 +84,7 @@ export default function UploadPage() {
     const error = validateFile(file ?? null);
     if (error) {
       toast.error(error);
-      if (inputRef.current) inputRef.current.value = "";
+      if (inputRef.current) inputRef.current.value = ""; // clear to re-select
       return;
     }
     revokePreview(preview);
@@ -124,7 +119,34 @@ export default function UploadPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || "Scan failed");
+
+        if (response.status === 400) {
+          throw new Error(
+            "Invalid file format. Please upload a valid image file (PNG, JPG, WEBP).",
+          );
+        }
+        if (response.status === 413) {
+          throw new Error(
+            `File too large. Maximum file size is ${FILE_MAX_LABEL}.`,
+          );
+        }
+        if (response.status === 404) {
+          throw new Error(
+            "Scan service unavailable. Please check if the backend is running.",
+          );
+        }
+        if (response.status === 500) {
+          throw new Error(
+            "Server error during scan. Please try again with a different file.",
+          );
+        }
+        if (response.status === 503) {
+          throw new Error(
+            "Scan service temporarily unavailable. Please try again in a moment.",
+          );
+        }
+
+        throw new Error(errorText || `Upload failed (HTTP ${response.status})`);
       }
 
       const result: ScanDto = await response.json();
@@ -137,10 +159,18 @@ export default function UploadPage() {
       });
       toast.success("Scan complete!");
     } catch (error) {
-      // keep file/preview for one-click retry
+      // network errors (no internet, server down)
+      let errorMessage = "Scan failed";
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        errorMessage =
+          "Please check your network connection and ensure the server is running."; // what are the chances this is even gonna happen? just in case
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setState({
         status: "error",
-        error: error instanceof Error ? error.message : "Scan failed",
+        error: errorMessage,
         file: currentFile,
         preview: currentPreview,
       });
@@ -165,21 +195,17 @@ export default function UploadPage() {
     setState({ status: "empty" });
   };
 
-  const handleCopy = async () => {
+  const handleCopy = () => {
     if (state.status !== "success") return;
-    try {
-      await navigator.clipboard.writeText(state.result.ocrResult || "");
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy");
-    }
+    navigator.clipboard.writeText(state.result.ocrResult || "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 pt-[94px]">
+    <div className="min-h-screen bg-background p-6 pt-23.5">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Error Alert - Above card */}
+        {/* error alert - above card */}
         {state.status === "error" && (
           <Alert variant="destructive" className="bg-rose-700 text-white">
             <AlertDescription className="font-bold">
@@ -188,7 +214,7 @@ export default function UploadPage() {
           </Alert>
         )}
 
-        {/* Upload Card - shown in all states except success */}
+        {/* upload card, shown in all states except success */}
         {state.status !== "success" && (
           <Card
             onDragEnter={handleDragEnter}
@@ -204,14 +230,12 @@ export default function UploadPage() {
               <CardTitle className="font-bold">Upload Image for OCR</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* File Input */}
               <div className="grid w-full max-w-sm items-center gap-2">
                 <Label className="font-bold">Image</Label>
                 <p className="text-xs text-gray-500">
                   PNG, JPG, WEBP supported
                 </p>
 
-                {/* Hidden native input */}
                 <Input
                   ref={inputRef}
                   id="upload"
@@ -222,7 +246,7 @@ export default function UploadPage() {
                   className="hidden"
                 />
 
-                {/* Custom trigger button */}
+                {/* custom trigger button bcuz native input is ass */}
                 <Button
                   variant="neutral"
                   onClick={() => inputRef.current?.click()}
@@ -233,7 +257,7 @@ export default function UploadPage() {
                 </Button>
               </div>
 
-              {/* Preview */}
+              {/* preview */}
               {(state.status === "selected" ||
                 state.status === "uploading" ||
                 state.status === "error") && (
@@ -246,12 +270,12 @@ export default function UploadPage() {
                     alt="Preview"
                     draggable={false}
                     onDragStart={(e) => e.preventDefault()}
-                    className="max-w-xs max-h-48 object-contain rounded-base border-2 border-border shadow-[6px_6px_0_0_var(--border)]"
+                    className="max-w-xs max-h-48 object-contain rounded-base border-2 border-border"
                   />
                 </div>
               )}
 
-              {/* Drag hint - shown when no file is selected */}
+              {/* drag hint, shown when no file is selected */}
               {state.status === "empty" && (
                 <div
                   role="button"
@@ -269,7 +293,7 @@ export default function UploadPage() {
                 </div>
               )}
 
-              {/* Upload Button - final action at the bottom */}
+              {/* upload */}
               <Button
                 onClick={handleUploadClick}
                 disabled={state.status === "uploading"}
@@ -284,7 +308,7 @@ export default function UploadPage() {
           </Card>
         )}
 
-        {/* Result Card */}
+        {/* result card */}
         {state.status === "success" && (
           <Card>
             <CardHeader>
@@ -298,7 +322,7 @@ export default function UploadPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Preview thumbnail */}
+              {/* preview thumbnail */}
               {state.preview && (
                 <div>
                   <p className="text-xs font-medium text-gray-500 mb-2">

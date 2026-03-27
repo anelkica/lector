@@ -1,5 +1,6 @@
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import {
   Sheet,
   SheetClose,
@@ -17,20 +18,16 @@ export function Titlebar() {
     <nav className="fixed inset-x-0 top-0 z-20 h-17.5 flex items-center border-b-4 border-border bg-secondary-background px-5">
       {/* logo */}
       <Button variant="default" size="icon" className="shrink-0" asChild>
-        <a
-          href="/"
-          className="text-[22px] font-logo font-black"
-          style={{ WebkitTextStroke: "1px black" }}
-        >
+        <Link to="/" className="text-[22px] font-logo font-black" style={{ WebkitTextStroke: "1px black" }}>
           L
-        </a>
+        </Link>
       </Button>
 
       {/* desktop nav */}
       <div className="hidden sm:flex items-center justify-center flex-1 gap-2">
         {NAV_LINKS.map((link) => (
           <Button key={link.label} variant="neutral" asChild>
-            <a href={link.href}>{link.label}</a>
+            <Link key={link.label} to={link.href}>{link.label}</Link>
           </Button>
         ))}
       </div>
@@ -53,15 +50,15 @@ export function Titlebar() {
 
             <nav className="flex flex-col gap-1 px-5 py-4">
               {NAV_LINKS.map((item) => (
-                <a
+                <Link
                   key={item.label}
-                  href={item.href}
+                  to={item.href}
                   className="flex items-center gap-3 px-3 py-3 font-heading text-lg rounded-base
                              hover:bg-main hover:text-main-foreground transition-colors"
                 >
                   <item.icon className="h-4 w-4 -translate-y-0.5 shrink-0" />
                   <span className="leading-none">{item.label}</span>
-                </a>
+                </Link>
               ))}
             </nav>
 
