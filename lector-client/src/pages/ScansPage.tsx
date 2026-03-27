@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 import type { ScanDto } from "@/types/scan";
-import { API_SCANS, ROUTES } from "@/constants";
+import { API_SCANS, API_SCAN_IMAGE, ROUTES } from "@/constants";
 import { formatRelative } from "@/utils/dateFormat";
 import { Link } from "react-router-dom";
 
@@ -15,7 +15,8 @@ export default function ScansPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedScan, setSelectedScan] = useState<ScanDto | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [modalCopied, setModalCopied] = useState(false);
 
   // fetch scans helper
   const loadScans = async (signal?: AbortSignal) => {
@@ -24,26 +25,36 @@ export default function ScansPage() {
       if (!response.ok) {
         // Try to get error message from response
         const text = await response.text();
-        
+
         // Handle common HTTP status codes
         if (response.status === 404) {
-          throw new Error("Scan service unavailable. Please check if the backend is running.");
+          throw new Error(
+            "Scan service unavailable. Please check if the backend is running.",
+          );
         }
         if (response.status === 500) {
-          throw new Error("Server error while loading scans. Please try again later.");
+          throw new Error(
+            "Server error while loading scans. Please try again later.",
+          );
         }
         if (response.status === 503) {
-          throw new Error("Scan service temporarily unavailable. Please try again in a moment.");
+          throw new Error(
+            "Scan service temporarily unavailable. Please try again in a moment.",
+          );
         }
-        
+
         // Use response text if available, otherwise generic message
-        throw new Error(text || `Failed to load scans (HTTP ${response.status})`);
+        throw new Error(
+          text || `Failed to load scans (HTTP ${response.status})`,
+        );
       }
       return await response.json();
     } catch (err) {
       // Network errors (no internet, server down)
       if (err instanceof TypeError && err.message.includes("fetch")) {
-        throw new Error("Cannot connect to server. Please check your network connection and ensure the backend is running.");
+        throw new Error(
+          "Cannot connect to server. Please check your network connection and ensure the backend is running.",
+        );
       }
       throw err;
     }
@@ -111,8 +122,9 @@ export default function ScansPage() {
     if (!selectedScan?.ocrResult) return;
     try {
       await navigator.clipboard.writeText(selectedScan.ocrResult);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setModalCopied(true);
+      setTimeout(() => setModalCopied(false), 2000);
+      toast.success("Copied to clipboard");
     } catch {
       toast.error("Failed to copy");
     }
@@ -248,6 +260,35 @@ export default function ScansPage() {
               className="transition-colors hover:bg-main/5 cursor-pointer border-2 border-border"
             >
               <CardHeader>
+                {scan.ocrResult && (
+                  <div className="aspect-4/3 w-full relative overflow-hidden rounded-base bg-secondary-background/80 border border-border mb-2">
+                    <div className="p-2 flex items-center justify-center h-full w-full">
+                      <img
+                        src={API_SCAN_IMAGE(scan.id)}
+                        alt={scan.alias}
+                        loading="lazy"
+                        decoding="async"
+                        className="object-contain w-full h-full rounded-md shadow-sm"
+                        onError={(e) => {
+                          console.error(
+                            "Preview load failed",
+                            API_SCAN_IMAGE(scan.id),
+                          );
+                          e.currentTarget.style.display = "none";
+                          const wrapper = e.currentTarget.parentElement;
+                          if (wrapper) {
+                            wrapper.textContent = "Preview unavailable";
+                            wrapper.classList.add(
+                              "text-xs",
+                              "text-muted-foreground",
+                              "text-center",
+                            );
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="font-bold text-sm line-clamp-1">
                     {scan.alias}
@@ -273,16 +314,22 @@ export default function ScansPage() {
                   <Button
                     variant="neutral"
                     size="sm"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      navigator.clipboard
-                        .writeText(scan.ocrResult || "")
-                        .catch(() => toast.error("Failed to copy"));
+                      if (!scan.ocrResult) return;
+                      try {
+                        await navigator.clipboard.writeText(scan.ocrResult);
+                        setCopiedId(scan.id);
+                        toast.success("Copied to clipboard");
+                        setTimeout(() => setCopiedId(null), 2000);
+                      } catch {
+                        toast.error("Failed to copy");
+                      }
                     }}
                     disabled={!scan.ocrResult}
                     className="flex-[2] min-h-[44px]"
                   >
-                    Copy Result
+                    {copiedId === scan.id ? "Copied!" : "Copy text"}
                   </Button>
                   <Button
                     variant="neutral"
@@ -358,7 +405,7 @@ export default function ScansPage() {
                     disabled={!selectedScan.ocrResult}
                     className="flex-[2] min-h-[44px]"
                   >
-                    {copied ? "Copied!" : "Copy Result"}
+                    {modalCopied ? "Copied!" : "Copy text"}
                   </Button>
                   <Button
                     onClick={(e) => handleDelete(selectedScan.id, e)}

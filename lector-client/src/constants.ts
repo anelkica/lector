@@ -1,6 +1,7 @@
 import { ScanLine, Upload, Info } from "lucide-react";
 
 export const API_SCANS = "/api/scans";
+export const API_SCAN_IMAGE = (id: string) => `/api/scans/${id}/image`;
 export const FILE_MAX_BYTES = 35 * 1024 * 1024;
 export const FILE_MAX_LABEL = "35MB";
 

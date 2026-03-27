@@ -36,6 +36,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+app.UseCors("AllowReact"); // I FORGOT TO REGISTER IT SMH
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

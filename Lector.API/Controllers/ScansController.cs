@@ -5,6 +5,7 @@ using Lector.API.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using System.Diagnostics;
 
 namespace Lector.API.Controllers;
@@ -58,6 +59,30 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
 
         logger.LogInformation("Deleted scan: {Id} ({Alias})", id, scan.Alias);
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/image")]
+    public async Task<ActionResult> GetScanImage(Guid id, CancellationToken cancellationToken = default)
+    {
+        if (!Directory.Exists(_uploadsFolder)) return NotFound("Image not found");
+
+        Scan? scan = await db.Scans.FirstOrDefaultAsync(scan => scan.Id == id, cancellationToken);
+        if (scan is null)
+            return NotFound($"Scan {id} not found");
+
+        if (string.IsNullOrWhiteSpace(scan.StorageName)) return NotFound("Image not found");
+
+        string uploadsRoot = Path.GetFullPath(_uploadsFolder) + Path.DirectorySeparatorChar;
+        string fullPath = Path.GetFullPath(Path.Combine(_uploadsFolder, scan.StorageName));
+        if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase)) return Forbid();
+        if (!System.IO.File.Exists(fullPath)) return NotFound("Image not found");
+
+        var stream = new FileStream(
+            fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096,
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+        var contentType = string.IsNullOrEmpty(scan.ContentType) ? "application/octet-stream" : scan.ContentType;
+        return new FileStreamResult(stream, contentType);
     }
 
     [HttpPost]
