@@ -5,6 +5,8 @@
 
 A LAN-based OCR scanning tool built with ASP.NET Core, React, and C++ OpenCV + Tesseract.
 
+[⟹ See screenshots](#-screenshots)
+
 ## ✨ Features
 - **Image Upload**
   - Drag and drop or select images to upload
@@ -70,6 +72,14 @@ These are the essential API endpoints for basic usage, however, it's best to vis
 | `DELETE` | `/api/scans/:id` | Delete a scan |
 | `POST` | `/api/scans` | Upload & scan image |
 | `GET` | `/health` | Health check |
+
+## 📸 Screenshots
+<div align="center">
+  <p>Desktop and mobile UI</p>
+  <img height="320" alt="Desktop view 1" src="https://github.com/user-attachments/assets/72a5d7bf-b5c0-4214-a758-586ab5dccebd" />
+  <img height="320" alt="Desktop view 2" src="https://github.com/user-attachments/assets/bc1cee8b-73fb-44ce-a0dd-4503001f6b59" />
+  <img height="320" alt="Mobile view" src="https://github.com/user-attachments/assets/09b430dd-e049-4382-9821-26365df61950" />
+</div>
 
 ## ⚖️ License
 MIT

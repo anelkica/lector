@@ -144,7 +144,7 @@ export default function ScansPage() {
   // error state takes priority over empty state
   if (error && scans.length === 0 && !loading) {
     return (
-      <div className="min-h-screen bg-background p-6 pt-23.5">
+      <div className="min-h-screen bg-background p-6 ">
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-2xl font-bold">Scan History</h1>
@@ -173,7 +173,7 @@ export default function ScansPage() {
   // loading state - skeletons
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6 pt-23.5">
+      <div className="min-h-screen bg-background p-6 ">
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-2xl font-bold">Scan History</h1>
@@ -203,7 +203,7 @@ export default function ScansPage() {
   // empty state (only if no error)
   if (scans.length === 0) {
     return (
-      <div className="min-h-screen bg-background p-6 pt-23.5">
+      <div className="min-h-screen bg-background p-6 ">
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-2xl font-bold">Scan History</h1>
@@ -227,7 +227,7 @@ export default function ScansPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 pt-23.5">
+    <div className="min-h-screen bg-background p-6 ">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* error alert - inline */}
         {error && (

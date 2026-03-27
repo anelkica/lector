@@ -298,8 +298,8 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 pt-23.5">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background px-4 sm:p-6 pb-10 overflow-x-hidden">
+      <div className="max-w-2xl mx-auto w-full space-y-6">
         {/* error alert - above card */}
         {state.status === "error" && (
           <Alert variant="destructive" className="bg-rose-700 text-white">
@@ -346,7 +346,7 @@ export default function UploadPage() {
                   variant="neutral"
                   onClick={() => inputRef.current?.click()}
                   disabled={state.status === "uploading"}
-                  className="w-1/3"
+                  className="w-full sm:w-1/3"
                 >
                   Choose File
                 </Button>
@@ -365,7 +365,7 @@ export default function UploadPage() {
                     alt="Preview"
                     draggable={false}
                     onDragStart={(e) => e.preventDefault()}
-                    className="max-w-xs max-h-48 object-contain rounded-base border-2 border-border"
+                    className="max-w-full max-h-48 object-contain rounded-base border-2 border-border"
                   />
                 </div>
               )}
@@ -460,8 +460,8 @@ export default function UploadPage() {
         )}
 
         {/* status + recent grid */}
-        <div className="grid gap-4 md:grid-cols-2 items-start">
-          <Card className="h-full">
+        <div className="grid gap-4 md:grid-cols-2 items-start min-w-0">
+          <Card className="h-full overflow-hidden">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold">
@@ -555,7 +555,7 @@ export default function UploadPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="h-full">
+          <Card className="h-full overflow-hidden">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-bold">

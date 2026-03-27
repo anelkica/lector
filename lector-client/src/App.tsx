@@ -9,11 +9,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <Titlebar />
-      <Routes>
-        <Route path="/" element={<UploadPage />} />
-        <Route path="/scans" element={<ScansPage />} />
-      </Routes>
-      <Toaster />
+      <div className="pt-20">
+        <Routes>
+          <Route path="/" element={<UploadPage />} />
+          <Route path="/scans" element={<ScansPage />} />
+        </Routes>
+        <Toaster />
+      </div>
     </BrowserRouter>
   );
 }
