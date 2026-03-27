@@ -8,7 +8,15 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { ScanDto } from "@/types/scan";
-import { API_SCANS, FILE_MAX_LABEL } from "@/constants";
+import {
+  API_SCANS,
+  API_SCAN_IMAGE,
+  FILE_MAX_LABEL,
+  ROUTES,
+  API_HEALTH,
+} from "@/constants";
+import { Link } from "react-router-dom";
+import { formatRelative } from "@/utils/dateFormat";
 import { validateFile } from "@/utils/fileValidation";
 
 type UploadState =
@@ -28,6 +36,12 @@ export default function UploadPage() {
   const [state, setState] = useState<UploadState>({ status: "empty" });
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<{
+    status: "connected" | "error" | "checking";
+    latencyMs: number | null;
+    checkedAt: Date | null;
+  }>({ status: "checking", latencyMs: null, checkedAt: null });
+  const [recentScans, setRecentScans] = useState<ScanDto[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const preview =
@@ -43,6 +57,87 @@ export default function UploadPage() {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
+
+  // Health check function (reusable for polling and manual refresh)
+  const runHealthCheck = async () => {
+    const visible = document.visibilityState === "visible";
+    if (!visible) return;
+
+    const healthAbort = new AbortController();
+    const start = performance.now();
+
+    try {
+      const healthRes = await fetch(API_HEALTH, { signal: healthAbort.signal });
+      const latency = Math.round(performance.now() - start);
+      if (healthRes.ok) {
+        setHealthStatus({
+          status: "connected",
+          latencyMs: latency,
+          checkedAt: new Date(),
+        });
+      } else {
+        setHealthStatus({
+          status: "error",
+          latencyMs: null,
+          checkedAt: new Date(),
+        });
+      }
+    } catch {
+      setHealthStatus({
+        status: "error",
+        latencyMs: null,
+        checkedAt: new Date(),
+      });
+    }
+  };
+
+  // Fetch recent scans separately
+  const fetchRecentScans = async () => {
+    try {
+      const scansRes = await fetch(`${API_SCANS}?limit=5`);
+      if (scansRes.ok) setRecentScans(await scansRes.json());
+    } catch {
+      /* keep existing list */
+    }
+  };
+
+  // health check
+  useEffect(() => {
+    let timeoutId: number | undefined;
+    let mounted = true;
+
+    const loop = async () => {
+      if (!mounted) return;
+      await runHealthCheck();
+      const delay = document.visibilityState === "visible" ? 30000 : 60000;
+      timeoutId = window.setTimeout(loop, delay);
+    };
+
+    loop();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        runHealthCheck();
+        fetchRecentScans();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
+  // Fetch recent scans on mount
+  useEffect(() => {
+    fetchRecentScans();
+  }, []);
+
+  const handleRefreshStatus = () => {
+    setHealthStatus({ status: "checking", latencyMs: null, checkedAt: null });
+    runHealthCheck();
+    toast.success("Refreshing..");
+  };
 
   const revokePreview = (p?: string) => {
     if (p) URL.revokeObjectURL(p);
@@ -363,6 +458,150 @@ export default function UploadPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* status + recent grid */}
+        <div className="grid gap-4 md:grid-cols-2 items-start">
+          <Card className="h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold">
+                  Server Status
+                </CardTitle>
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "w-2 h-2 rounded-full",
+                        healthStatus.status === "connected"
+                          ? "bg-green-500"
+                          : healthStatus.status === "error"
+                            ? "bg-red-500"
+                            : "bg-gray-400",
+                      )}
+                    />
+                    <span className="text-sm font-semibold">
+                      {healthStatus.status === "connected"
+                        ? "Connected"
+                        : healthStatus.status === "error"
+                          ? "Disconnected"
+                          : "Checking..."}
+                    </span>
+                  </div>
+                  {healthStatus.latencyMs !== null &&
+                    healthStatus.status === "connected" && (
+                      <span className="text-xs font-medium text-foreground/70">
+                        {healthStatus.latencyMs}ms
+                      </span>
+                    )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col justify-between gap-2.5 text-sm text-foreground flex-1">
+              <div className="space-y-2.5">
+                {recentScans.length > 0 && (
+                  <p className="text-sm">
+                    <span className="font-semibold text-foreground">
+                      Scans stored:
+                    </span>
+                    <span className="text-foreground/80">
+                      {" "}
+                      {recentScans.length}
+                    </span>
+                  </p>
+                )}
+                {recentScans[0]?.createdAt && (
+                  <p className="text-sm">
+                    <span className="font-semibold text-foreground">
+                      Last scan:
+                    </span>
+                    <span className="text-foreground/80">
+                      {" "}
+                      {formatRelative(recentScans[0].createdAt)}
+                    </span>
+                  </p>
+                )}
+                {healthStatus.checkedAt && (
+                  <p className="text-sm">
+                    <span className="font-semibold text-foreground">
+                      Checked:
+                    </span>
+                    <span className="text-foreground/70">
+                      {" "}
+                      {formatRelative(healthStatus.checkedAt.toISOString())}
+                    </span>
+                  </p>
+                )}
+              </div>
+              <div className="pt-2">
+                {healthStatus.status === "error" ? (
+                  <Button
+                    variant="neutral"
+                    size="sm"
+                    onClick={handleRefreshStatus}
+                    className="w-full cursor-pointer"
+                  >
+                    Reconnect
+                  </Button>
+                ) : (
+                  <Button
+                    variant="neutral"
+                    size="sm"
+                    onClick={handleRefreshStatus}
+                    className="w-full cursor-pointer"
+                  >
+                    Refresh
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="h-full">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold">
+                  Recent Scans
+                </CardTitle>
+                <Button variant="neutral" size="sm" asChild className="text-xs">
+                  <Link to={ROUTES.scans}>View all →</Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentScans.length === 0 ? (
+                <p className="text-xs text-gray-500">No scans yet</p>
+              ) : (
+                recentScans.map((scan) => (
+                  <div key={scan.id} className="flex items-center gap-3">
+                    <div className="w-12 h-12 overflow-hidden rounded-md bg-secondary-background border border-border flex-shrink-0 flex items-center justify-center">
+                      <img
+                        src={API_SCAN_IMAGE(scan.id)}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          const p = e.currentTarget.parentElement;
+                          if (p) {
+                            p.textContent = "No preview";
+                            p.classList.add("text-xs", "text-gray-400");
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {scan.alias}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatRelative(scan.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

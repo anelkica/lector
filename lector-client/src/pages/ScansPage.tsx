@@ -239,16 +239,11 @@ export default function ScansPage() {
         {/* header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h1 className="text-2xl font-bold">Scan History</h1>
-          <div className="flex items-center gap-4 flex-wrap">
-            <p className="text-sm text-gray-500">
-              Showing {scans.length} scan{scans.length !== 1 ? "s" : ""}
-            </p>
-            {error && (
-              <Button variant="neutral" size="sm" onClick={handleRetry}>
-                Retry
-              </Button>
-            )}
-          </div>
+          {error && (
+            <Button variant="neutral" size="sm" onClick={handleRetry}>
+              Retry
+            </Button>
+          )}
         </div>
 
         {/* card grid */}
@@ -356,8 +351,8 @@ export default function ScansPage() {
               className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 border-border"
               onClick={(e) => e.stopPropagation()}
             >
-              <CardHeader>
-                <div className="flex items-start justify-between gap-2">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between gap-2">
                   <CardTitle className="font-bold">
                     {selectedScan.alias}
                   </CardTitle>
