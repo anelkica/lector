@@ -64,9 +64,20 @@ Basic flow:
 
 ## 📍 API Endpoints
 These are the essential API endpoints for basic usage, however, it's best to visit the project's OpenAPI docs at `http://localhost:5185/scalar` after running the backend.
+
+### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/scans` | List recent scans |
+| `POST` | `/api/auth/register` | Register a new user account |
+| `POST` | `/api/auth/login` | Login and receive tokens |
+| `POST` | `/api/auth/logout` | Logout and clear tokens |
+| `POST` | `/api/auth/refresh` | Refresh access token |
+| `GET` | `/api/auth/me` | Get current user profile |
+
+### Scans
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/scans` | List your recent scans |
 | `GET` | `/api/scans/:id` | Get scan details |
 | `GET` | `/api/scans/:id/image` | Get scan image |
 | `DELETE` | `/api/scans/:id` | Delete a scan |

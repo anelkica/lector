@@ -1,24 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Lector.API.Dtos;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Lector.API.Models;
 
-// now usually everything should have it's own file
-// but idc, this is a smol project and it's much cleaner placing everything in one file here
-// especially since the objects are small (dto -> extension -> db entity)
-
 /// <summary>OCR processing status.</summary>
 public enum ScanStatus { Pending, Success, Error, Timeout }
-
-// hide StorageName from frontend btw
-public record ScanDto(
-    Guid Id,
-    string Alias,
-    string? OcrResult,
-    ScanStatus Status,
-    DateTime CreatedAt,
-    bool IsDuplicate = false
-);
 
 public static class ScanExtensions
 {
@@ -47,6 +35,13 @@ public class Scan
     /// <summary>SHA256 hash for deduplication (skips OCR if exists).</summary>
     [Required, MaxLength(64)]
     public string Hash { get; init; } = string.Empty;
+
+    /// <summary>Owner's user ID</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>EF Core owner's user object</summary>
+    [ForeignKey(nameof(UserId))]
+    public ApplicationUser? User { get; set; }
 
     /// <summary>OCR-extracted text (null if failed/pending).</summary>
     public string? OcrResult { get; set; }

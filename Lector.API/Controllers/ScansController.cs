@@ -1,15 +1,19 @@
 ﻿using Lector.API.Data;
+using Lector.API.Dtos;
 using Lector.API.Models;
 using Lector.API.Services;
 using Lector.API.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
 using System.Diagnostics;
+using System.Security.Claims;
 
 namespace Lector.API.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class ScansController(IScannerService scanner, ILogger<ScansController> logger, AppDbContext db) : ControllerBase
@@ -21,7 +25,10 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
     [EndpointDescription("List recent scans ordered by creation date")]
     public async Task<ActionResult<IEnumerable<ScanDto>>> GetScans(int limit = 50, CancellationToken cancellationToken = default)
     {
+        string userId = GetUserId();
+
         var scans = await db.Scans
+            .Where(scan => scan.UserId == userId)
             .OrderByDescending(scan => scan.CreatedAt)
             .Take(Math.Min(limit, 100))
             .ToListAsync(cancellationToken);
@@ -33,7 +40,9 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
     [EndpointDescription("Get details of a specific scan")]
     public async Task<ActionResult<ScanDto>> GetScan(Guid id, CancellationToken cancellationToken = default)
     {
-        var scan = await db.Scans.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        string userId = GetUserId();
+
+        var scan = await db.Scans.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId, cancellationToken);
         if (scan is null)
             return NotFound($"Scan {id} not found");
 
@@ -44,7 +53,9 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
     [EndpointDescription("Delete a scan record and its associated file")]
     public async Task<ActionResult> DeleteScan(Guid id, CancellationToken cancellationToken = default)
     {
-        var scan = await db.Scans.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        string userId = GetUserId();
+
+        var scan = await db.Scans.FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId, cancellationToken);
         if (scan is null)
             return NotFound($"Scan {id} not found");
 
@@ -66,7 +77,9 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
     {
         if (!Directory.Exists(_uploadsFolder)) return NotFound("Image not found");
 
-        Scan? scan = await db.Scans.FirstOrDefaultAsync(scan => scan.Id == id, cancellationToken);
+        string userId = GetUserId();
+
+        Scan? scan = await db.Scans.FirstOrDefaultAsync(scan => scan.Id == id && scan.UserId == userId, cancellationToken);
         if (scan is null)
             return NotFound($"Scan {id} not found");
 
@@ -89,6 +102,8 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
     [EndpointDescription("Upload an image for OCR scanning. Returns recognized text from the image.")]
     public async Task<ActionResult<ScanDto>> ScanImage(IFormFile image, CancellationToken cancellationToken = default)
     {
+        string userId = GetUserId();
+
         if (image is not { Length: > 0 })
             return BadRequest("No image uploaded");
 
@@ -132,7 +147,8 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
                 Status = ScanStatus.Success,
                 SizeBytes = image.Length,
                 ContentType = image.ContentType,
-                ScanDurationMs = (int)stopwatch.ElapsedMilliseconds
+                ScanDurationMs = (int)stopwatch.ElapsedMilliseconds,
+                UserId = userId
             };
 
             db.Scans.Add(scan);
@@ -156,4 +172,7 @@ public class ScansController(IScannerService scanner, ILogger<ScansController> l
             return StatusCode(500, $"Scan failed: {ex.Message}");
         }
     }
+
+    private string GetUserId() => 
+        User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User ID claim missing");
 }
