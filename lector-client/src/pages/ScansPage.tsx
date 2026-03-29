@@ -3,13 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import type { ScanDto } from "@/types/scan";
 import { API_SCANS, API_SCAN_IMAGE, ROUTES } from "@/constants";
 import { formatRelative } from "@/utils/dateFormat";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/utils/apiFetch";
 
 export default function ScansPage() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [scans, setScans] = useState<ScanDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,57 +21,44 @@ export default function ScansPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalCopied, setModalCopied] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
-  // fetch scans helper
   const loadScans = async (signal?: AbortSignal) => {
     try {
-      const response = await fetch(`${API_SCANS}?limit=50`, { signal });
+      const response = await apiFetch(`${API_SCANS}?limit=50`, { signal }, () => {
+        logout();
+        navigate(ROUTES.login);
+      });
       if (!response.ok) {
-        // Try to get error message from response
         const text = await response.text();
 
-        // Handle common HTTP status codes
         if (response.status === 404) {
-          throw new Error(
-            "Scan service unavailable. Please check if the backend is running.",
-          );
+          throw new Error("Scan service unavailable. Please check if the backend is running.");
         }
         if (response.status === 500) {
-          throw new Error(
-            "Server error while loading scans. Please try again later.",
-          );
+          throw new Error("Server error while loading scans. Please try again later.");
         }
         if (response.status === 503) {
-          throw new Error(
-            "Scan service temporarily unavailable. Please try again in a moment.",
-          );
+          throw new Error("Scan service temporarily unavailable. Please try again in a moment.");
         }
 
-        // Use response text if available, otherwise generic message
-        throw new Error(
-          text || `Failed to load scans (HTTP ${response.status})`,
-        );
+        throw new Error(text || `Failed to load scans (HTTP ${response.status})`);
       }
       return await response.json();
     } catch (err) {
-      // Network errors (no internet, server down)
       if (err instanceof TypeError && err.message.includes("fetch")) {
-        throw new Error(
-          "Cannot connect to server. Please check your network connection and ensure the backend is running.",
-        );
+        throw new Error("Cannot connect to server. Please check your network connection and ensure the backend is running.");
       }
       throw err;
     }
   };
 
-  // initial load
   useEffect(() => {
     const abortController = new AbortController();
 
     loadScans(abortController.signal)
       .then((data) => setScans(data))
       .catch((err) => {
-        // ignore abort errors
         if (err.name !== "AbortError") {
           setError(err.message);
         }
@@ -77,47 +68,55 @@ export default function ScansPage() {
     return () => abortController.abort();
   }, []);
 
-  // retry failed fetch
-  const handleRetry = () => {
-    setLoading(true);
+  const handleRetry = async () => {
     setError(null);
+    setRetrying(true);
     const abortController = new AbortController();
 
-    loadScans(abortController.signal)
-      .then((data) => setScans(data))
-      .catch((err) => {
-        if (err.name !== "AbortError") {
-          setError(err.message);
-        }
-      })
-      .finally(() => setLoading(false));
+    try {
+      const data = await loadScans(abortController.signal);
+      setScans(data);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        setError(err.message);
+      }
+    } finally {
+      setRetrying(false);
+    }
   };
 
-  // delete with optimistic update
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setDeletingId(id);
-    const prev = scans;
+
+    const deletedScan = scans.find(s => s.id === id);
     setScans((s) => s.filter((x) => x.id !== id));
 
-    // also close modal if deleting the selected scan
     if (selectedScan?.id === id) {
       setSelectedScan(null);
     }
 
     try {
-      const response = await fetch(`${API_SCANS}/${id}`, { method: "DELETE" });
+      const response = await apiFetch(`${API_SCANS}/${id}`, {
+        method: "DELETE",
+      }, () => {
+        logout();
+        navigate(ROUTES.login);
+      });
       if (!response.ok) throw new Error(await response.text());
       toast.success("Scan deleted");
     } catch {
-      setScans(prev); // rollback
+      if (deletedScan) {
+        setScans((s) => [...s, deletedScan].sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ));
+      }
       toast.error("Delete failed");
     } finally {
       setDeletingId(null);
     }
   };
 
-  // copy from modal
   const handleCopy = async () => {
     if (!selectedScan?.ocrResult) return;
     try {
@@ -130,7 +129,6 @@ export default function ScansPage() {
     }
   };
 
-  // close modal on esc
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSelectedScan(null);
@@ -141,7 +139,6 @@ export default function ScansPage() {
     }
   }, [selectedScan]);
 
-  // error state takes priority over empty state
   if (error && scans.length === 0 && !loading) {
     return (
       <div className="min-h-screen bg-background p-6 ">
@@ -160,8 +157,9 @@ export default function ScansPage() {
               <p className="text-gray-500">
                 There was a problem loading your scan history
               </p>
-              <Button onClick={handleRetry} className="w-full min-h-[44px]">
-                Try Again
+              <Button onClick={handleRetry} className="w-full min-h-[44px]" disabled={retrying}>
+                {retrying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {retrying ? "Loading..." : "Try Again"}
               </Button>
             </CardContent>
           </Card>
@@ -170,37 +168,14 @@ export default function ScansPage() {
     );
   }
 
-  // loading state - skeletons
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6 ">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <h1 className="text-2xl font-bold">Scan History</h1>
-            <p className="text-sm text-gray-500">Loading...</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="border-2 border-border">
-                <CardHeader>
-                  <div className="h-5 bg-secondary-background rounded-base animate-pulse" />
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="h-4 bg-secondary-background rounded-base animate-pulse" />
-                  <div className="flex gap-2">
-                    <div className="h-10 flex-1 bg-secondary-background rounded-base animate-pulse" />
-                    <div className="h-10 flex-1 bg-secondary-background rounded-base animate-pulse" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  // empty state (only if no error)
   if (scans.length === 0) {
     return (
       <div className="min-h-screen bg-background p-6 ">
@@ -240,8 +215,9 @@ export default function ScansPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h1 className="text-2xl font-bold">Scan History</h1>
           {error && (
-            <Button variant="neutral" size="sm" onClick={handleRetry}>
-              Retry
+            <Button variant="neutral" size="sm" onClick={handleRetry} disabled={retrying}>
+              {retrying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {retrying ? "Loading..." : "Retry"}
             </Button>
           )}
         </div>

@@ -15,9 +15,11 @@ import {
   ROUTES,
   API_HEALTH,
 } from "@/constants";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { formatRelative } from "@/utils/dateFormat";
 import { validateFile } from "@/utils/fileValidation";
+import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/utils/apiFetch";
 
 type UploadState =
   | { status: "empty" }
@@ -33,6 +35,8 @@ type UploadState =
   | { status: "error"; error: string; file: File; preview: string };
 
 export default function UploadPage() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [state, setState] = useState<UploadState>({ status: "empty" });
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -43,6 +47,10 @@ export default function UploadPage() {
   }>({ status: "checking", latencyMs: null, checkedAt: null });
   const [recentScans, setRecentScans] = useState<ScanDto[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const healthAbortRef = useRef<AbortController | null>(null);
+  const failureCountRef = useRef(0);
+  const MAX_BACKOFF = 300000; // 5 minutes max
+  const BASE_DELAY = 30000; // 30 seconds base
 
   const preview =
     state.status === "selected" ||
@@ -58,24 +66,27 @@ export default function UploadPage() {
     };
   }, [preview]);
 
-  // Health check function (reusable for polling and manual refresh)
   const runHealthCheck = async () => {
     const visible = document.visibilityState === "visible";
     if (!visible) return;
 
-    const healthAbort = new AbortController();
+    healthAbortRef.current?.abort();
+    healthAbortRef.current = new AbortController();
+
     const start = performance.now();
 
     try {
-      const healthRes = await fetch(API_HEALTH, { signal: healthAbort.signal });
+      const healthRes = await fetch(API_HEALTH, { signal: healthAbortRef.current.signal });
       const latency = Math.round(performance.now() - start);
       if (healthRes.ok) {
+        failureCountRef.current = 0;
         setHealthStatus({
           status: "connected",
           latencyMs: latency,
           checkedAt: new Date(),
         });
       } else {
+        failureCountRef.current++;
         setHealthStatus({
           status: "error",
           latencyMs: null,
@@ -83,6 +94,7 @@ export default function UploadPage() {
         });
       }
     } catch {
+      failureCountRef.current++;
       setHealthStatus({
         status: "error",
         latencyMs: null,
@@ -91,17 +103,18 @@ export default function UploadPage() {
     }
   };
 
-  // Fetch recent scans separately
   const fetchRecentScans = async () => {
     try {
-      const scansRes = await fetch(`${API_SCANS}?limit=5`);
+      const scansRes = await apiFetch(`${API_SCANS}?limit=5`, {}, () => {
+        logout();
+        navigate(ROUTES.login);
+      });
       if (scansRes.ok) setRecentScans(await scansRes.json());
     } catch {
-      /* keep existing list */
+      // keep existing list
     }
   };
 
-  // health check
   useEffect(() => {
     let timeoutId: number | undefined;
     let mounted = true;
@@ -109,7 +122,12 @@ export default function UploadPage() {
     const loop = async () => {
       if (!mounted) return;
       await runHealthCheck();
-      const delay = document.visibilityState === "visible" ? 30000 : 60000;
+
+      const visible = document.visibilityState === "visible";
+      const baseDelay = visible ? BASE_DELAY : BASE_DELAY * 2;
+      const backoffDelay = Math.min(BASE_DELAY * Math.pow(2, failureCountRef.current), MAX_BACKOFF);
+      const delay = visible ? Math.min(baseDelay, backoffDelay) : Math.min(baseDelay * 2, MAX_BACKOFF);
+
       timeoutId = window.setTimeout(loop, delay);
     };
 
@@ -125,10 +143,10 @@ export default function UploadPage() {
       mounted = false;
       if (timeoutId) clearTimeout(timeoutId);
       document.removeEventListener("visibilitychange", onVisible);
+      healthAbortRef.current?.abort();
     };
   }, []);
 
-  // Fetch recent scans on mount
   useEffect(() => {
     fetchRecentScans();
   }, []);
@@ -166,7 +184,7 @@ export default function UploadPage() {
     const error = validateFile(file);
     if (error) {
       toast.error(error);
-      if (inputRef.current) inputRef.current.value = ""; // clear to re-select
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
@@ -179,7 +197,7 @@ export default function UploadPage() {
     const error = validateFile(file ?? null);
     if (error) {
       toast.error(error);
-      if (inputRef.current) inputRef.current.value = ""; // clear to re-select
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
     revokePreview(preview);
@@ -207,9 +225,12 @@ export default function UploadPage() {
     formData.append("image", currentFile);
 
     try {
-      const response = await fetch(API_SCANS, {
+      const response = await apiFetch(API_SCANS, {
         method: "POST",
         body: formData,
+      }, () => {
+        logout();
+        navigate(ROUTES.login);
       });
 
       if (!response.ok) {
@@ -254,7 +275,6 @@ export default function UploadPage() {
       });
       toast.success("Scan complete!");
     } catch (error) {
-      // network errors (no internet, server down)
       let errorMessage = "Scan failed";
       if (error instanceof TypeError && error.message.includes("fetch")) {
         errorMessage =
@@ -562,7 +582,7 @@ export default function UploadPage() {
                   Recent Scans
                 </CardTitle>
                 <Button variant="neutral" size="sm" asChild className="text-xs">
-                  <Link to={ROUTES.scans}>View all →</Link>
+                  <Link to={ROUTES.scans}>View all &rarr;</Link>
                 </Button>
               </div>
             </CardHeader>

@@ -1,4 +1,4 @@
-import { ScanLine, Upload, Info } from "lucide-react";
+import { ScanLine, Upload } from "lucide-react";
 
 export const API_SCANS = "/api/scans";
 export const API_HEALTH = "/health";
@@ -6,16 +6,21 @@ export const API_SCAN_IMAGE = (id: string) => `/api/scans/${id}/image`;
 export const FILE_MAX_BYTES = 35 * 1024 * 1024;
 export const FILE_MAX_LABEL = "35MB";
 
+export const API_AUTH_LOGIN = "/api/auth/login";
+export const API_AUTH_REGISTER = "/api/auth/register";
+export const API_AUTH_LOGOUT = "/api/auth/logout";
+export const API_AUTH_ME = "/api/auth/me";
+
 export const ROUTES = {
   home: "/",
   scans: "/scans",
-  about: "/about",
+  login: "/login",
+  register: "/register",
 } as const;
 
 export const NAV_LINKS = [
   { label: "Upload", href: ROUTES.home, icon: Upload },
   { label: "Scans", href: ROUTES.scans, icon: ScanLine },
-  { label: "About", href: ROUTES.about, icon: Info },
 ] as const;
 
 // scan status codes from backend (ScanStatus enum)
