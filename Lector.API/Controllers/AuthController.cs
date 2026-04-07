@@ -67,7 +67,7 @@ public class AuthController(ITokenService tokenService, UserManager<ApplicationU
     public async Task<ActionResult> Logout()
     {
         var user = await GetCurrentUserAsync();
-        if (user == null)
+        if (user is null)
             return Unauthorized();
 
         user.RefreshToken = null;
@@ -86,10 +86,49 @@ public class AuthController(ITokenService tokenService, UserManager<ApplicationU
     public async Task<IActionResult> GetCurrentUser()
     {
         var user = await GetCurrentUserAsync();
-        if (user == null)
+        if (user is null)
             return NotFound();
 
         return Ok(new { user.Email, user.UserName });
+    }
+
+    [Authorize]
+    [HttpPost("change-email")]
+    [EndpointDescription("Changes the current user's email")]
+    public async Task<ActionResult> ChangeEmail([FromBody] ChangeEmailRequest request)
+    {
+        ApplicationUser? user = await GetCurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+
+        ApplicationUser? existingUser = await manager.FindByEmailAsync(request.NewEmail);
+        if (existingUser is not null)
+            return BadRequest("Email already in use");
+
+        user.Email = request.NewEmail;
+        user.UserName = request.NewEmail;
+
+        IdentityResult result = await manager.UpdateAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return Ok("Email changed successfully");
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    [EndpointDescription("Changes the current user's password")]
+    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        ApplicationUser? user = await GetCurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+
+        IdentityResult result = await manager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return Ok("Password changed successfully");
     }
 
     private async Task<ApplicationUser?> GetCurrentUserAsync()

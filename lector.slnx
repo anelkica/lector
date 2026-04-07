@@ -1,3 +1,6 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
   <Project Path="Lector.API/Lector.API.csproj" Id="a6f11ad9-b1d5-4c0c-8203-ef1461deaa3c" />
 </Solution>
